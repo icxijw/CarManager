@@ -95,7 +95,7 @@
         this.$refs['dataForm'].validate((valid) => {
           if (valid) {
             this.$http({
-              url: this.$http.adornUrl(`/promotion/users/${!this.dataForm.userId ? 'save' : 'update'}`),
+              url: this.$http.adornUrl(`http://192.168.43.97:88/api/user/users/save/${!this.dataForm.userId ? 'save' : 'update'}`),
               method: 'post',
               data: this.$http.adornData({
                 'userId': this.dataForm.userId || undefined,

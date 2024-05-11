@@ -19,6 +19,9 @@
 </template>
 
 <script>
+	import qs from 'qs';
+	// 导入 Axios
+	import axios from 'axios';
   export default {
     data () {
       return {
@@ -39,55 +42,77 @@
       }
     },
     methods: {
-      init (id) {
-        this.dataForm.faultCodeId = id || 0
-        this.visible = true
-        this.$nextTick(() => {
-          this.$refs['dataForm'].resetFields()
-          if (this.dataForm.faultCodeId) {
-            this.$http({
-              url: this.$http.adornUrl(`/promotion/faultcodes/info/${this.dataForm.faultCodeId}`),
-              method: 'get',
-              params: this.$http.adornParams()
-            }).then(({data}) => {
-              if (data && data.code === 0) {
-                this.dataForm.faultCode = data.faultCodes.faultCode
-                this.dataForm.diagnosisResult = data.faultCodes.diagnosisResult
-              }
-            })
-          }
-        })
-      },
+		init (id) {
+		  this.dataForm.faultCodeId = id || 0
+		  this.visible = true
+		  this.$nextTick(() => {
+			this.$refs['dataForm'].resetFields()
+			if (this.dataForm.faultCodeId) {
+			  fetch(`http://192.168.43.97:88/api/vehicle/faultCodes/info/${this.dataForm.faultCodeId}`)
+				.then(response => {
+				  if (!response.ok) {
+					throw new Error('Network response was not ok')
+				  }
+				  return response.json()
+				})
+				.then(data => {
+					console.log(data);
+				  if (data && data.code === 0) {
+					this.dataForm.faultCode = data.data.faultCode
+					this.dataForm.diagnosisResult = data.data.diagnosisResult
+				  }
+				})
+				.catch(error => {
+				  console.error('Error fetching fault code info:', error)
+				})
+			}
+		  })
+		},
       // 表单提交
-      dataFormSubmit () {
-        this.$refs['dataForm'].validate((valid) => {
-          if (valid) {
-            this.$http({
-              url: this.$http.adornUrl(`/promotion/faultcodes/${!this.dataForm.faultCodeId ? 'save' : 'update'}`),
-              method: 'post',
-              data: this.$http.adornData({
-                'faultCodeId': this.dataForm.faultCodeId || undefined,
-                'faultCode': this.dataForm.faultCode,
-                'diagnosisResult': this.dataForm.diagnosisResult
-              })
-            }).then(({data}) => {
-              if (data && data.code === 0) {
-                this.$message({
-                  message: '操作成功',
-                  type: 'success',
-                  duration: 1500,
-                  onClose: () => {
-                    this.visible = false
-                    this.$emit('refreshDataList')
-                  }
-                })
-              } else {
-                this.$message.error(data.msg)
-              }
-            })
-          }
-        })
-      }
+
+
+dataFormSubmit () {
+  this.$refs['dataForm'].validate((valid) => {
+    if (valid) {
+      const postData = {
+        faultCodeId: this.dataForm.faultCodeId || undefined,
+        faultCode: this.dataForm.faultCode,
+        diagnosisResult: this.dataForm.diagnosisResult
+      };
+
+      // 添加调试语句
+      console.log('postData:', postData);
+
+      const url = this.dataForm.faultCodeId ? `http://192.168.43.97:88/api/vehicle/faultCodes/update` : `http://192.168.43.97:88/api/vehicle/faultCodes/save`;
+
+      // 使用 Axios 发送 POST 请求
+      axios.post(url, postData, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }).then(response => {
+        const data = response.data;
+        if (data && data.code === 0) {
+          this.$message({
+            message: '操作成功',
+            type: 'success',
+            duration: 1500,
+            onClose: () => {
+              this.visible = false
+              this.$emit('refreshDataList')
+            }
+          })
+        } else {
+          this.$message.error(data.msg)
+        }
+      }).catch(error => {
+        console.error('Error submitting data:', error)
+        this.$message.error('提交数据时发生错误，请稍后重试。')
+      })
+    }
+  })
+}
+
     }
   }
 </script>
